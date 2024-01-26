@@ -1,4 +1,5 @@
 import {v2 as cloudinary} from 'cloudinary';
+import { extractPublicId } from 'cloudinary-build-url';
 import fs from "fs";
           
 cloudinary.config({ 
@@ -7,19 +8,51 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET 
 });
 
-const uploadOnCloudinary = async (localPath) =>{
+const uploadOnCloudinary = async (localPath) => {
     try {
-        if(!localPath) return null
-        const response = await cloudinary.uploader.upload(localPath,{
-            resource_type:"auto"
-        })
-        console.log('uploaded successfully',response.url);
-        fs.unlinkSync(localPath)
-        return response
+        if (!localPath) return null;
+
+        // Upload to Cloudinary
+        const response = await cloudinary.uploader.upload(localPath, {
+            resource_type: "auto",
+            media_metadata: true
+        });
+
+        if(!response) return null;
+
+        console.log('Uploaded successfully', response.url);
+
+        // Delete local file
+        fs.unlinkSync(localPath);
+
+        return response;
     } catch (error) {
-        fs.unlinkSync(localPath)
-        return null        
+        console.error('Error uploading to Cloudinary:', error);
+
+        // Delete local file in case of error
+        fs.unlinkSync(localPath);
+
+        return null;
+    }
+};
+
+const deletedOnClouinary = async (oldFileUrl) => {
+    try {
+        // Deleting old file
+        if (!oldFileUrl) return null;
+
+        const oldFilePublicId = extractPublicId(oldFileUrl) ;
+        
+        if (oldFilePublicId) {
+            await cloudinary.uploader.destroy(oldFilePublicId);
+            console.log('Old file deleted successfully');
+            return true
+        }
+
+    } catch (error) {
+        console.error('Error deleting video on Cloudinary:', error);
     }
 }
 
-export {uploadOnCloudinary}
+
+export {uploadOnCloudinary,deletedOnClouinary }

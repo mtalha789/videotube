@@ -67,8 +67,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
     if (!avatarLocalPath) throw new ApiError("Avatar file is Required", 400);
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+    const avatar = await uploadOnCloudinary({ localPath: avatarLocalPath });
+    const coverImage = await uploadOnCloudinary({ localPath: coverImageLocalPath });
 
     if (!avatar) throw new ApiError("Avatar file is required", 400);
 
@@ -230,70 +230,51 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 })
 
 const updateAvatar = asyncHandler(async (req, res) => {
-    const avatarLocalPath = req.file?.path
+    const { file, user } = req;
 
-    if (!avatarLocalPath)
-        throw new ApiError("Avatar file is required", 400)
+    if (!file?.path) {
+        throw new ApiError("Avatar file is required", 400);
+    }
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const avatar = await uploadOnCloudinary({ localPath: file.path, oldFileUrl: user?.avatar });
 
     if (!avatar?.url) {
-        throw new ApiError("Error while uploading avatar")
+        throw new ApiError("Error while uploading avatar");
     }
 
-    const oldAvatarPublicId = await extractPublicId(req.user?.avatar)
-    await cloudinary.uploader.destroy(oldAvatarPublicId)
+    const updatedUser = await User.findByIdAndUpdate(
+        user?._id,
+        { $set: { avatar: avatar.url } },
+        { new: true }
+    ).select("-password -refreshToken");
 
-    const user = await User.findByIdAndUpdate(
-        req.user?._id,
-        {
-            $set: {
-                avatar: avatar.url
-            }
-        },
-        {
-            new: true
-        }
-    ).select("-password-refreshToken")
-
-    res
-        .status(200)
-        .json(new ApiResponse(200, user, "avatar updated successully"))
-})
+    res.status(200).json(new ApiResponse(200, updatedUser, "Avatar updated successfully"));
+});
 
 const updateCoverImage = asyncHandler(async (req, res) => {
-    const coverImageLocalPath = req.file?.path
+    const coverImageLocalPath = req.file?.path;
 
-    if (!coverImageLocalPath)
-        throw new ApiError("Coverimage is missing", 400)
-
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
-
-    if (!coverImage?.url) {
-        throw new ApiError("Error while uploading coverImage")
+    if (!coverImageLocalPath) {
+        throw new ApiError("Cover image is missing", 400);
     }
 
-    const oldCoverImagePublicId = extractPublicId(req.user?.coverImage)
-    if (oldCoverImagePublicId)
-        await cloudinary.uploader.destroy(oldCoverImagePublicId)
+    const coverImage = await uploadOnCloudinary({
+        localPath: coverImageLocalPath,
+        oldFileUrl: req.user?.coverImage
+    });
+
+    if (!coverImage?.url) {
+        throw new ApiError("Error while uploading cover image");
+    }
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
-        {
-            $set: {
-                coverImage: coverImage.url
-            }
-        },
-        {
-            new: true
-        }
-    ).select("-password-refreshToken")
+        { $set: { coverImage: coverImage.url } },
+        { new: true }
+    ).select("-password -refreshToken");
 
-    res
-        .status(200)
-        .json(new ApiResponse(200, user, "coverImage updated successully"))
-})
-
+    res.status(200).json(new ApiResponse(200, user, "Cover image updated successfully"));
+});
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
     const { fullName, email } = req.body
@@ -335,7 +316,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "subscription",
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "channel",
                 as: "subscribers"
@@ -343,7 +324,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "subscription",
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "subscriber",
                 as: "subscribedTo"
@@ -390,7 +371,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 })
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-    const user = User.aggregate(
+    const user = await User.aggregate(
         {
             $match: {
                 _id: new mongoose.Types.ObjectId(req.user?._id)
@@ -405,7 +386,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                 pipeline: [
                     {
                         $lookup: {
-                            from :"user",
+                            from :"users",
                             localField:"owner",
                             foreignField:"_id",
                             as:"owner",
