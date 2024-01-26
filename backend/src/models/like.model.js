@@ -23,3 +23,5 @@ const likeSchema = new mongoose.Schema(
         timestampstrue
     }
 )
+
+export const Like = mongoose.model("Like",likeSchema);
