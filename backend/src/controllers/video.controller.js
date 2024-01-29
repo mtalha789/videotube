@@ -98,15 +98,15 @@ const publishAVideo = asyncHandler(async (req, res) => {
     if (!videoFile && !thumbnail) throw new ApiError("Video file and Thumbnail is required", 400);
 
     //duration of video
-    const metadata = await cloudinary.api.resource(videoFile.public_id)
-    const duration = metadata.duration;
+    console.log("metadata : ",isNaN(videoFile?.duration));
 
     const video = await Video.create({
         title,
         description,
         videoFile: videoFile.url,
         thumbnail : thumbnail.url,
-        duration
+        duration:videoFile.duration,
+        owner:req.user._id
     })
 
     const uploadedVideo = await Video.findById(video._id).select("-isPublished")

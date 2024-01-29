@@ -42,7 +42,7 @@ const deletedOnClouinary = async (oldFileUrl) => {
         if (!oldFileUrl) return null;
 
         const oldFilePublicId = extractPublicId(oldFileUrl) ;
-        
+        console.log(oldFilePublicId);
         if (oldFilePublicId) {
             await cloudinary.uploader.destroy(oldFilePublicId);
             console.log('Old file deleted successfully');

@@ -2,10 +2,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deletedOnClouinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import JWT from "jsonwebtoken";
-import { v2 as cloudinary } from "cloudinary";
-import { extractPublicId } from "cloudinary-build-url";
 import mongoose from "mongoose";
 
 const cookieOptions = {
@@ -67,8 +65,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
     if (!avatarLocalPath) throw new ApiError("Avatar file is Required", 400);
 
-    const avatar = await uploadOnCloudinary({ localPath: avatarLocalPath });
-    const coverImage = await uploadOnCloudinary({ localPath: coverImageLocalPath });
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
     if (!avatar) throw new ApiError("Avatar file is required", 400);
 
@@ -113,9 +111,9 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError("Invalid user credentials", 401);
     }
 
-    const { refreshToken, accessToken } = generateAccessToken(user._id);
+    const { refreshToken, accessToken } = await generateAccessToken(user._id);
 
-    const loggedInUser = User.findById(user._id).select(
+    const loggedInUser = await User.findById(user._id).select(
         "-password -refreshToken"
     );
 
@@ -126,9 +124,7 @@ const loginUser = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse(
                 200,
-                {
-                    user: loggedInUser, refreshToken, accessToken
-                },
+                { user: loggedInUser, refreshToken, accessToken},
                 "User Logged In Successfully"
             )
         )
@@ -196,12 +192,16 @@ const refereshAccessToken = asyncHandler(async (req, res) => {
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-    res.status(
-        200,
-        {
-            user: req.user
-        },
-        "current user fetched"
+    res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            {
+                user: req.user
+            },
+            "current user fetched"
+        )
     )
 })
 
@@ -236,11 +236,13 @@ const updateAvatar = asyncHandler(async (req, res) => {
         throw new ApiError("Avatar file is required", 400);
     }
 
-    const avatar = await uploadOnCloudinary({ localPath: file.path, oldFileUrl: user?.avatar });
+    const avatar = await uploadOnCloudinary( file.path);
 
     if (!avatar?.url) {
         throw new ApiError("Error while uploading avatar");
     }
+
+    await deletedOnClouinary(user?.avatar)
 
     const updatedUser = await User.findByIdAndUpdate(
         user?._id,
@@ -258,14 +260,13 @@ const updateCoverImage = asyncHandler(async (req, res) => {
         throw new ApiError("Cover image is missing", 400);
     }
 
-    const coverImage = await uploadOnCloudinary({
-        localPath: coverImageLocalPath,
-        oldFileUrl: req.user?.coverImage
-    });
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
     if (!coverImage?.url) {
         throw new ApiError("Error while uploading cover image");
     }
+
+    await deletedOnClouinary(req.user?.coverImage)
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
@@ -280,10 +281,10 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     const { fullName, email } = req.body
 
     if (!fullName || !email) {
-        throw new ApiError(400, "All fields are required")
+        throw new ApiError("All fields are required",400)
     }
 
-    const user = User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
@@ -295,7 +296,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
     ).select("-password")
 
-    return res
+    res
         .status(200)
         .json(new ApiResponse(200, user, "Account details updated successfully"))
 });
