@@ -29,6 +29,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
     const sortCondition = {};
     if (sortBy && sortType) {
         sortCondition[sortBy] = sortType === 'asc' ? 1 : -1;
+    }else{
+        sortCondition.views=1
     }
 
     // Aggregation pipeline stages
@@ -64,7 +66,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     // Execute the aggregation pipeline
     const videos = await Video.aggregate(pipeline);
 
-    if (!videos || videos.length === 0) {
+    if (!videos || videos?.length === 0) {
         throw new ApiError("No Videos Found", 404);
     }
 
