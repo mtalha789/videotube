@@ -161,10 +161,10 @@ const refereshAccessToken = asyncHandler(async (req, res) => {
     const reqRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
     if (!reqRefreshToken) {
-        throw new ApiError("unauthorized request")
+        throw new ApiError("unauthorized request",401)
     }
 
-    const decodedToken = JWT.verify(reqRefreshToken)
+    const decodedToken = JWT.verify(reqRefreshToken,process.env.REFRESH_TOKEN_SECRET)
 
     const user = User.findById(decodedToken._id)
 
