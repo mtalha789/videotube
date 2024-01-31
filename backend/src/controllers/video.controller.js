@@ -227,27 +227,25 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
+    const { videoId } = req.params;
 
-    const video = await Video.findOneAndUpdate(
-        {_id: videoId, owner: req.user?._id},
-        {
-            $set:
-                { 
-                    isPublished: { $not : "$isPublished"} 
-                }
-        },
-        { new: true }
-    )
-
+    // Retrieve the current value of isPublished from the document
+    const video = await Video.findOne({ _id: videoId, owner: req.user?._id });
+    
     if (!video) {
         throw new ApiError("Video does not exist or unauthorized request", 404);
     }
 
+    // Toggle the value of isPublished
+    video.isPublished = !video.isPublished;
+
+    // Save the updated document
+    const updatedVideo = await video.save({validateBeforeSave:false});
+
     res
-    .status(200)
-    .json(new ApiResponse(200,video,"Toggled published status"))
-})
+        .status(200)
+        .json(new ApiResponse(200, updatedVideo, "Toggled published status"));
+});
 
 export {
     getAllVideos,
