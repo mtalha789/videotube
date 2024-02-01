@@ -309,7 +309,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     }
 
     //aggerate pipelines : article yet to be written
-    const channel = await User.aggregate(
+    const channel = await User.aggregate([
         {
             $match: {
                 username: username?.toLowerCase()
@@ -334,14 +334,14 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         {
             $addFields: {
                 subscriberCount: {
-                    $size: $subscribers
+                    $size: "$subscribers"
                 },
                 channelSubscribedToCount: {
-                    $size: $subscribedTo
+                    $size: "$subscribedTo"
                 },
                 isSubscribed: {
                     $cond: {
-                        if: { $in: [req.user?._id, $subscribers.subscriber] },
+                        if: { $in: [req.user?._id, "$subscribers.subscriber"] },
                         then: true,
                         else: false
                     }
@@ -360,7 +360,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 email: 1
             }
         }
-    )
+    ])
 
     if (!channel?.length) {
         throw new ApiError("channel does not exist", 404)
@@ -372,7 +372,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 })
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-    const user = await User.aggregate(
+    const user = await User.aggregate([
         {
             $match: {
                 _id: new mongoose.Types.ObjectId(req.user?._id)
@@ -405,14 +405,14 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                     {
                         $addFields:{
                             owner:{
-                                $first : $owner
+                                $first : "$owner"
                             }
                         }
                     }
                 ]
             }
         }
-    )
+    ])
 
     res
     .status(200)

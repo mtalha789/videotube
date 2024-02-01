@@ -1,11 +1,10 @@
-import mongoose, { isValidObjectId } from "mongoose"
+import mongoose from "mongoose"
 import { Video } from "../models/video.model.js"
 import { User } from "../models/user.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { deletedOnClouinary, uploadOnCloudinary } from "../utils/cloudinary.js"
-import { v2 as cloudinary} from "cloudinary"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -159,29 +158,35 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
         {
             $addFields:{
+                owner:{
+                    $first : "$owner"
+                },
                likes : {
-                $size : $totalLikes
+                $size : "$totalLikes"
                }
             }
         }
     ])
 
-    // get video by id
-    // const video = await Video.findById(videoId)
-
-    console.log(video);
     if (!video) {
         throw new ApiError("Video Not Found", 404)
     }
 
     //if video is not published
-    if(!video.isPublished && video.owner !== req.user?._id){
+    if(!video[0].isPublished && (video.owner?._id !== req.user?._id)){
         throw new ApiError("Unauthorized request",401)
     }
 
+    await User.findByIdAndUpdate(req.user._id,{
+        $push:{watchHistory:video[0]._id}
+    })
+
+    // Video.updateOne({_id:video[0]._id},{
+    // })
+
     res
         .status(200)
-        .json(new ApiResponse(200, video, "Video Fetched Successfully"))
+        .json(new ApiResponse(200, video[0], "Video Fetched Successfully"))
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
