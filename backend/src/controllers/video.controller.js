@@ -98,9 +98,6 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
     if (!videoFile && !thumbnail) throw new ApiError("Video file and Thumbnail is required", 400);
 
-    //duration of video
-    console.log("metadata : ",isNaN(videoFile?.duration));
-
     const video = await Video.create({
         title,
         description,
