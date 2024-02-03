@@ -10,7 +10,7 @@ const tweetSchema = new Schema(
             type:String,
             required:true
         },
-        featurdImage:[{
+        featuredImage:[{
             type:String
         }]
     },
