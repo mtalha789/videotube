@@ -7,8 +7,8 @@ import {asyncHandler} from "../utils/asyncHandler.js"
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
 
-    if(!videoId){
-        throw new ApiError("No video to Process",400)
+    if(!isValidObjectId(new mongoose.Types.ObjectId(videoId))){
+        throw new ApiError("Invalid video id",400)
     }
 
     const isLiked = await Like.findOne({video: videoId, likedBy : req.user?._id}) 
@@ -33,6 +33,10 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
     const {commentId} = req.params
+
+    if(!isValidObjectId(new mongoose.Types.ObjectId(commentId))){
+        throw new ApiError("Invalid comment id",400)
+    }
 
     if(!commentId){
         throw new ApiError("No Comment to Process",400)
@@ -61,8 +65,8 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
 const toggleTweetLike = asyncHandler(async (req, res) => {
     const {tweetId} = req.params
 
-    if(!tweetId){
-        throw new ApiError("No tweet to process",400)
+    if(!isValidObjectId(new mongoose.Types.ObjectId(tweetId))){
+        throw new ApiError("Invalid tweet id",400)
     }
 
     const isLiked = await Like.findOne({tweet: tweetId, likedBy : req.user?._id}) 

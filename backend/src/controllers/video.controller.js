@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+import mongoose,{ isValidObjectId } from "mongoose"
 import { Video } from "../models/video.model.js"
 import { User } from "../models/user.model.js"
 import { ApiError } from "../utils/ApiError.js"
@@ -121,6 +121,10 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
 
+    if(!isValidObjectId(new mongoose.Types.ObjectId(videoId))){
+        throw new ApiError("Invalid video id",400)
+    }
+
     //using pipeline
     const video = await Video.aggregate([
         {
@@ -189,6 +193,10 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
 
+    if(!isValidObjectId(new mongoose.Types.ObjectId(videoId))){
+        throw new ApiError("Invalid video id",400)
+    }
+
     const { title, description } = req.body;
 
     // Find the video by ID
@@ -215,6 +223,10 @@ const updateVideo = asyncHandler(async (req, res) => {
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
+
+    if(!isValidObjectId(new mongoose.Types.ObjectId(videoId))){
+        throw new ApiError("Invalid video id",400)
+    }
 
     const video = await Video.findOneAndDelete({ _id: videoId, owner: req.user._id });
 

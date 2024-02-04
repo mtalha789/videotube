@@ -33,8 +33,12 @@ const createTweet = asyncHandler(async (req, res) => {
 })
 
 const getUserTweets = asyncHandler(async (req, res) => {
-    const userId = req.params
+    const {userId} = req.params
 
+    if(!isValidObjectId(new mongoose.Types.ObjectId(userId))){
+        throw new ApiError("Invalid UserId",400)
+    }
+    
     const userTweets = await Tweet.aggregate([
         {
             $match:{
