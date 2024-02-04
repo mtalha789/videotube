@@ -61,8 +61,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
             $sort: sortCondition,
         },
     ];
-
-    // Execute the aggregation pipeline
     const videos = await Video.aggregate(pipeline);
 
     if (!videos || videos?.length === 0) {
@@ -70,10 +68,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     }
 
     // Perform pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-
-    const limitedVideos = videos.slice(startIndex, endIndex);
+    const limitedVideos = await Video.aggregatePaginate(videos,{page,limit});
 
     res.status(200).json(new ApiResponse(200, limitedVideos, "Videos Fetched Successfully"));
 });
