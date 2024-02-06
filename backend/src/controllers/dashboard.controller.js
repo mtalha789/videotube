@@ -8,6 +8,23 @@ import {asyncHandler} from "../utils/asyncHandler.js"
 
 const getChannelStats = asyncHandler(async (req, res) => {
     // TODO: Get the channel stats like total video views, total subscribers, total videos, total likes etc.
+    const channelStats = await Video.aggregate([
+        {
+            $match:{
+                owner : new mongoose.Types.ObjectId(req.user?._id)
+            }
+        },
+        {
+            $count:"totalVideos"
+        },
+        {
+            $addFields:{
+                totalViews : {
+                    $sum : ""
+                }
+            }
+        }
+    ]) 
 })
 
 const getChannelVideos = asyncHandler(async (req, res) => {
