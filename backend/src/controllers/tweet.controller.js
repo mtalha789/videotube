@@ -13,23 +13,22 @@ const createTweet = asyncHandler(async (req, res) => {
     }
 
     const featuredImagesLocalPath = req.files
-    console.log(featuredImagesLocalPath);
     
-    // const featuredImage=featuredImagesLocalPath.map(async(file)=>await uploadOnCloudinary(file))
+    const featuredImage = []
+    for(const file of featuredImagesLocalPath){
+        const cloudinaryUrl = await uploadOnCloudinary(file.path)
+        featuredImage.push(cloudinaryUrl.url)
+    }
 
-    // const tweet = await Tweet.create(
-    //     {
-    //         content,
-    //         featuredImage,
-    //         owner:req.user?._id
-    //     }
-    // )
+    const tweet = await Tweet.create(
+        {
+            content,
+            featuredImage,
+            owner:req.user?._id
+        }
+    )
 
-    // if(!tweet){
-    //     throw new ApiError("Error Creating tweet",500)
-    // }
-
-    // res.status(201).json(new ApiResponse(201,tweet,"Tweet created successfully"))
+    res.status(201).json(new ApiResponse(201,tweet,"Tweet created successfully"))
 })
 
 const getUserTweets = asyncHandler(async (req, res) => {
