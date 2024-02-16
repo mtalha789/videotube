@@ -4,7 +4,7 @@ import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { deletedOnClouinary, uploadOnCloudinary } from "../utils/cloudinary.js"
 
 const createTweet = asyncHandler(async (req, res) => {
     const {content} = req.body
@@ -93,11 +93,15 @@ const updateTweet = asyncHandler(async (req, res) => {
 const deleteTweet = asyncHandler(async (req, res) => {
     const { tweetId } = req.params
 
-    const deletedTweet = await Tweet.deleteOne({_id : tweetId ,owner : req.user?._id}) 
+    const toDeleteTweet = await Tweet.findOne({_id : tweetId ,owner : req.user?._id}) 
 
-    if(!deletedTweet){
-        throw new ApiError("Unauthorized request or error deleting tweet",404)
+    if(!toDeleteTweet){
+        throw new ApiError("Unauthorized request",404)
     }
+
+    toDeleteTweet.featuredImage.forEach(async file=> await deletedOnClouinary(file))
+
+    const deletedTweet = await Tweet.findByIdAndDelete(toDeleteTweet._id)
 
     res
     .status(200)
