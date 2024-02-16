@@ -60,6 +60,19 @@ const getUserTweets = asyncHandler(async (req, res) => {
                     }
                 ]
             }
+        },
+        {
+            $lookup:{
+                from:"likes",
+                localField:"_id",
+                foreignField:"tweet",
+                as:"likes",
+                pipeline:[
+                    {
+                        $count: "totalLikes"
+                    }
+                ]
+            }
         }
     ])
 
