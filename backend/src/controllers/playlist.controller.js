@@ -60,7 +60,9 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         },
         {
             $addFields:{
-                $first:"$owner"
+                owner:{
+                    $first:"$owner"
+                }
             }
         }
     ])
@@ -110,10 +112,16 @@ const getPlaylistById = asyncHandler(async (req, res) => {
         },
         {
             $addFields:{
-                $first:"$owner"
+                owner:{
+                    $first:"$owner"
+                }
             }
         }
     ])
+
+    if(playlist.length===0){
+        throw new ApiError("Playlist not found",404)
+    }
 
     res
     .status(200)
@@ -219,7 +227,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
 
     const playlist = await Playlist.findOne({
         _id : playlistId,
-        owneer : req.user?._id
+        owner : req.user?._id
     })
 
     if(!playlist){
